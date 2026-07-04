@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>PDF Araç Kutusu</title>
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #4f46e5;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px 56px; }
+
+  header { text-align: center; margin-bottom: 28px; }
+  .logo {
+    width: 60px; height: 60px; border-radius: 16px;
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 20px; letter-spacing: .5px;
+    box-shadow: 0 8px 20px rgba(79,70,229,.35);
+    margin-bottom: 14px;
+  }
+  h1 { font-size: 26px; margin: 0 0 6px; font-weight: 800; letter-spacing: -.02em; }
+  .subtitle { color: var(--muted); font-size: 15px; margin: 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 26px;
+  }
+  @media (max-width: 460px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    position: relative;
+    display: flex; align-items: center; gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: var(--shadow);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    min-height: 84px;
+  }
+  .card:active { transform: scale(.98); }
+  @media (hover: hover) {
+    .card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(15,23,42,.10); border-color: #cbd5e1; }
+  }
+
+  .icon {
+    flex: 0 0 auto;
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon svg { width: 26px; height: 26px; }
+  .c-blue   { background: #eff6ff; color: #2563eb; }
+  .c-green  { background: #ecfdf5; color: #059669; }
+  .c-orange { background: #fff7ed; color: #ea580c; }
+  .c-purple { background: #f5f3ff; color: #7c3aed; }
+  .c-teal   { background: #f0fdfa; color: #0d9488; }
+  .c-pink   { background: #fdf2f8; color: #db2777; }
+
+  .card-body { min-width: 0; }
+  .card-title { font-weight: 700; font-size: 15.5px; margin: 0 0 2px; }
+  .card-desc { color: var(--muted); font-size: 13px; margin: 0; }
+
+  .badge {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); background: var(--bg);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 2px 8px;
+  }
+
+  footer { text-align: center; margin-top: 34px; color: var(--muted); font-size: 12.5px; }
+  footer .dot { opacity: .5; margin: 0 6px; }
+  #offline { display: inline-flex; align-items: center; gap: 6px; }
+  #offline .light { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; }
+  #offline.ready .light { background: #22c55e; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">PDF</div>
+      <h1>PDF Araç Kutusu</h1>
+      <p class="subtitle">İsviçre çakısı gibi — hepsi tarayıcıda, tamamen offline.</p>
+    </header>
+
+    <main class="grid">
+      <a class="card" href="resim-to-pdf.html">
+        <span class="icon c-blue">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Resim → PDF</p>
+          <p class="card-desc">Resimleri tek PDF'e çevir</p>
+        </span>
+      </a>
+
+      <a class="card" href="birlestir.html">
+        <span class="icon c-green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h10a2 2 0 0 1 2 2v8"/><rect x="4" y="4" width="8" height="8" rx="1.5"/><rect x="12" y="12" width="8" height="8" rx="1.5"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Birleştir</p>
+          <p class="card-desc">PDF'leri tek dosyada topla</p>
+        </span>
+      </a>
+
+      <a class="card" href="ayir.html">
+        <span class="icon c-orange">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.12 15.88M14.47 14.48 20 20M8.12 8.12 12 12"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Ayır</p>
+          <p class="card-desc">Sayfa seç, ayır veya çıkar</p>
+        </span>
+      </a>
+
+      <a class="card" href="sayfa-yonetimi.html">
+        <span class="icon c-purple">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Sayfa Yönetimi</p>
+          <p class="card-desc">Sırala, ekle, sil</p>
+        </span>
+      </a>
+
+      <a class="card" href="filigran-kaldir.html">
+        <span class="icon c-teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 5.5 9.19a9.19 9.19 0 1 0 13 0z"/><path d="m4 4 16 16"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Filigran Kaldır</p>
+          <p class="card-desc">Katman filigranını temizle</p>
+        </span>
+      </a>
+
+      <a class="card" href="metin-duzenle.html">
+        <span class="icon c-pink">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </span>
+        <span class="card-body">
+          <p class="card-title">Metin Düzenle</p>
+          <p class="card-desc">Metni yerinde değiştir</p>
+        </span>
+      </a>
+    </main>
+
+    <footer>
+      <span id="offline"><span class="light"></span><span id="offline-text">Çevrimdışı hazırlanıyor…</span></span>
+      <span class="dot">•</span>
+      <span>Sunucusuz &amp; ücretsiz</span>
+    </footer>
+  </div>
+
+  <script>
+    // Service worker — offline çalışma için. file:// üzerinde kaydolmaz, sorun değil.
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      // Yeni sürüm devralınca sayfayı bir kez otomatik yenile (ilk kurulumda değil).
+      const hadController = !!navigator.serviceWorker.controller;
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing || !hadController) return;
+        refreshing = true;
+        location.reload();
+      });
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          reg.update();   // her açılışta güncelleme kontrolü
+          const setReady = () => {
+            document.getElementById('offline').classList.add('ready');
+            document.getElementById('offline-text').textContent = 'Çevrimdışı kullanıma hazır';
+          };
+          if (navigator.serviceWorker.controller) setReady();
+          else reg.addEventListener('updatefound', () => {
+            const sw = reg.installing;
+            sw && sw.addEventListener('statechange', () => {
+              if (sw.state === 'activated' || navigator.serviceWorker.controller) setReady();
+            });
+          });
+        }).catch(() => {
+          document.getElementById('offline-text').textContent = 'Çevrimiçi mod';
+        });
+      });
+    } else {
+      const el = document.getElementById('offline-text');
+      if (el) el.textContent = 'Yerel dosya modu';
+    }
+  </script>
+</body>
+</html>

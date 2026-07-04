@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Birleştir — PDF Araç Kutusu</title>
+<style>
+  :root {
+    --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #4f46e5; --accent-soft: #eef2ff;
+    --green: #059669; --green-soft: #ecfdf5; --danger: #e11d48;
+    --radius: 18px; --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 64px; }
+
+  .back { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--muted);
+    font-size:14px; font-weight:600; padding:8px 4px; }
+  .back svg { width:18px; height:18px; }
+
+  .head { display:flex; align-items:center; gap:12px; margin:6px 0 20px; }
+  .head .icon { width:44px; height:44px; border-radius:13px; background:var(--green-soft); color:var(--green);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .head .icon svg { width:24px; height:24px; }
+  .head h1 { font-size:21px; font-weight:800; margin:0; letter-spacing:-.02em; }
+  .head p { margin:1px 0 0; color:var(--muted); font-size:13px; }
+
+  /* Dropzone */
+  .drop {
+    border:2px dashed #cbd5e1; border-radius:var(--radius); background:var(--surface);
+    padding:34px 20px; text-align:center; cursor:pointer; transition:.15s;
+  }
+  .drop.hot { border-color:var(--green); background:var(--green-soft); }
+  .drop .di { width:52px; height:52px; border-radius:15px; background:var(--green-soft); color:var(--green);
+    display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .drop .di svg { width:28px; height:28px; }
+  .drop .t { font-weight:700; font-size:15.5px; }
+  .drop .s { color:var(--muted); font-size:13px; margin-top:4px; }
+
+  /* List */
+  .listhead { display:flex; align-items:center; justify-content:space-between; margin:22px 2px 10px; }
+  .listhead h2 { font-size:14px; font-weight:700; margin:0; }
+  .listhead .clear { background:none; border:none; color:var(--danger); font-size:13px; font-weight:600; cursor:pointer; padding:4px; }
+  ul.list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  li.item {
+    display:flex; align-items:center; gap:12px; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px; padding:10px; box-shadow:var(--shadow);
+  }
+  li.item.dragging { opacity:.5; border:1.5px dashed var(--accent); background:var(--accent-soft); }
+  li.item.dragging * { visibility:hidden; }
+  li.item.drag-clone { position:fixed; z-index:100; margin:0; pointer-events:none; width:auto;
+    box-shadow:0 14px 34px rgba(15,23,42,.28); transform:scale(1.03); opacity:.97; }
+  /* Sürükleme sırasında metin seçimini engelle */
+  body.dragging-active { -webkit-user-select:none; user-select:none; cursor:grabbing; }
+  .fico { width:44px; height:52px; border-radius:8px; background:var(--green-soft); color:var(--green);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .fico svg { width:24px; height:24px; }
+  .meta { min-width:0; flex:1; }
+  .meta .n { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .meta .sz { font-size:12px; color:var(--muted); }
+  .meta .sz.err { color:var(--danger); }
+  .num { flex:0 0 auto; width:22px; text-align:center; font-size:12.5px; font-weight:700; color:var(--muted); }
+  .actions { display:flex; gap:4px; flex:0 0 auto; }
+  .actions button { width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
+    background:var(--surface); color:var(--muted); cursor:pointer; display:flex; align-items:center;
+    justify-content:center; }
+  .actions button:active { background:#f1f5f9; }
+  .actions button:disabled { opacity:.3; cursor:default; }
+  .actions button.del { color:var(--danger); }
+  .actions svg { width:18px; height:18px; }
+  .handle { width:40px; height:40px; border-radius:10px; display:flex; align-items:center;
+    justify-content:center; color:#94a3b8; cursor:grab; flex:0 0 auto; touch-action:none;
+    -webkit-user-select:none; user-select:none; }
+  .handle:active { cursor:grabbing; background:#f1f5f9; color:#64748b; }
+  .handle svg { width:20px; height:20px; pointer-events:none; }
+
+  /* Toplam bilgi */
+  .summary { margin:14px 2px 0; font-size:13px; color:var(--muted); text-align:center; }
+  .summary b { color:var(--text); }
+
+  /* Generate bar */
+  .bar { position:sticky; bottom:0; margin-top:22px; padding:14px 0 4px;
+    background:linear-gradient(to top, var(--bg) 70%, transparent); }
+  .btn {
+    width:100%; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:700;
+    background:var(--accent); color:#fff; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; gap:9px; box-shadow:0 8px 20px rgba(79,70,229,.3); transition:.15s;
+  }
+  .btn:active { transform:scale(.99); }
+  .btn:disabled { background:#cbd5e1; box-shadow:none; cursor:default; }
+  .btn svg { width:20px; height:20px; }
+  .spin { width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+    border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  .hidden { display:none !important; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a;
+    color:#fff; padding:11px 18px; border-radius:12px; font-size:13.5px; font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transition:.25s; pointer-events:none; z-index:50;
+    max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; }
+  .toast.err { background:var(--danger); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Ana sayfa
+    </a>
+
+    <div class="head">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h10a2 2 0 0 1 2 2v8"/><rect x="4" y="4" width="8" height="8" rx="1.5"/><rect x="12" y="12" width="8" height="8" rx="1.5"/></svg>
+      </span>
+      <div>
+        <h1>Birleştir</h1>
+        <p>PDF'leri sırala, tek dosyada birleştir</p>
+      </div>
+    </div>
+
+    <div class="drop" id="drop">
+      <input type="file" id="file" accept="application/pdf,.pdf" multiple class="hidden">
+      <div class="di">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M20 21H4a2 2 0 0 1-2-2v-4"/></svg>
+      </div>
+      <div class="t">PDF ekle</div>
+      <div class="s">Dokun ya da buraya sürükle · birden fazla seçebilirsin</div>
+    </div>
+
+    <div class="listhead hidden" id="listhead">
+      <h2 id="count">0 dosya</h2>
+      <button class="clear" id="clear">Tümünü temizle</button>
+    </div>
+    <ul class="list" id="list"></ul>
+    <div class="summary hidden" id="summary"></div>
+
+    <div class="bar">
+      <button class="btn" id="gen" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+        <span id="gen-text">Birleştir ve indir</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/pdf-lib.min.js"></script>
+  <script>
+  (function () {
+    const { PDFDocument } = PDFLib;
+
+    let items = [];   // { id, file, name, size, pages (null|number|'err') }
+    let idSeq = 0;
+
+    const $ = (s) => document.querySelector(s);
+    const drop = $('#drop'), fileInput = $('#file'), list = $('#list');
+    const genBtn = $('#gen'), genText = $('#gen-text');
+    const listhead = $('#listhead'), countEl = $('#count'), summaryEl = $('#summary');
+
+    // ---- Dosya ekleme ----
+    drop.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => { addFiles(e.target.files); fileInput.value = ''; });
+
+    ['dragenter', 'dragover'].forEach(ev =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('hot'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('hot'); }));
+    drop.addEventListener('drop', (e) => { if (e.dataTransfer) addFiles(e.dataTransfer.files); });
+
+    function isPdf(f) {
+      return f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    }
+
+    async function addFiles(fileList) {
+      const arr = Array.from(fileList).filter(isPdf);
+      if (!arr.length) { toast('PDF dosyası bulunamadı', true); return; }
+      const added = [];
+      arr.forEach(f => {
+        const it = { id: ++idSeq, file: f, name: f.name, size: f.size, pages: null };
+        items.push(it); added.push(it);
+      });
+      render();
+      // Sayfa sayılarını arka planda oku
+      for (const it of added) {
+        try {
+          const bytes = new Uint8Array(await it.file.arrayBuffer());
+          const doc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+          it.pages = doc.getPageCount();
+        } catch (e) {
+          it.pages = 'err';
+        }
+        render();
+      }
+    }
+
+    // ---- Liste ----
+    $('#clear').addEventListener('click', () => { items = []; render(); });
+
+    function render() {
+      list.innerHTML = '';
+      const has = items.length > 0;
+      listhead.classList.toggle('hidden', !has);
+      summaryEl.classList.toggle('hidden', !has);
+      countEl.textContent = items.length + ' dosya';
+
+      // En az 1 geçerli dosya varsa birleştirilebilir
+      const valid = items.filter(i => i.pages !== 'err');
+      genBtn.disabled = valid.length === 0;
+
+      let totalPages = 0, counting = false;
+      items.forEach(i => {
+        if (i.pages === null) counting = true;
+        else if (typeof i.pages === 'number') totalPages += i.pages;
+      });
+      summaryEl.innerHTML = `Toplam <b>${totalPages}</b> sayfa${counting ? ' <span style="opacity:.6">(sayılıyor…)</span>' : ''}`;
+
+      items.forEach((it, idx) => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.dataset.id = it.id;
+        const pagesLabel = it.pages === 'err' ? 'Okunamadı'
+          : it.pages === null ? '… sayfa'
+          : `${it.pages} sayfa`;
+        li.innerHTML = `
+          <span class="num">${idx + 1}</span>
+          <span class="fico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </span>
+          <div class="meta">
+            <div class="n">${escapeHtml(it.name)}</div>
+            <div class="sz ${it.pages === 'err' ? 'err' : ''}">${pagesLabel} · ${fmtSize(it.size)}</div>
+          </div>
+          <div class="actions">
+            <button class="up" title="Yukarı" ${idx === 0 ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+            </button>
+            <button class="down" title="Aşağı" ${idx === items.length - 1 ? 'disabled' : ''}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <button class="del" title="Sil">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+          <span class="handle" title="Sürükle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="18" r="1"/></svg>
+          </span>`;
+        li.querySelector('.up').addEventListener('click', () => move(idx, idx - 1));
+        li.querySelector('.down').addEventListener('click', () => move(idx, idx + 1));
+        li.querySelector('.del').addEventListener('click', () => remove(idx));
+        li.querySelector('.handle').addEventListener('pointerdown', (e) => startDrag(e, li));
+        list.appendChild(li);
+      });
+    }
+
+    function move(from, to) {
+      if (to < 0 || to >= items.length) return;
+      const [it] = items.splice(from, 1);
+      items.splice(to, 0, it);
+      render();
+    }
+    function remove(idx) { items.splice(idx, 1); render(); }
+
+    // ---- Sürükle-sırala (araya sok, fare + dokunmatik) ----
+    let drag = null;
+
+    function startDrag(e, li) {
+      if (e.button != null && e.button !== 0) return;
+      if (items.length < 2) return;
+      e.preventDefault();
+      const rect = li.getBoundingClientRect();
+      const clone = li.cloneNode(true);
+      clone.classList.add('drag-clone');
+      clone.classList.remove('dragging');
+      clone.style.width = rect.width + 'px';
+      clone.style.left = rect.left + 'px';
+      clone.style.top = rect.top + 'px';
+      document.body.appendChild(clone);
+      li.classList.add('dragging');
+
+      document.body.classList.add('dragging-active');
+      drag = { li, clone, grabDY: e.clientY - rect.top };
+      // Not: pointer capture yerine document'te dinliyoruz; sürüklenen kartı DOM'da
+      // taşıyınca element-tabanlı capture düşüyor ve sürükleme donuyordu.
+      document.addEventListener('pointermove', onDragMove, { passive: false });
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
+    }
+
+    function onDragMove(e) {
+      if (!drag) return;
+      e.preventDefault();
+      drag.clone.style.top = (e.clientY - drag.grabDY) + 'px';
+      autoScroll(e.clientY);
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const target = under && under.closest('.item');
+      if (!target || target === drag.li || target.classList.contains('drag-clone')) return;
+      const r = target.getBoundingClientRect();
+      const after = e.clientY > r.top + r.height / 2;
+      if (after) target.after(drag.li); else target.before(drag.li);
+    }
+
+    function autoScroll(y) {
+      const m = 70, sp = 14;
+      if (y < m) window.scrollBy(0, -sp);
+      else if (y > window.innerHeight - m) window.scrollBy(0, sp);
+    }
+
+    function endDrag() {
+      if (!drag) return;
+      document.removeEventListener('pointermove', onDragMove);
+      document.removeEventListener('pointerup', endDrag);
+      document.removeEventListener('pointercancel', endDrag);
+      drag.clone.remove();
+      drag.li.classList.remove('dragging');
+      document.body.classList.remove('dragging-active');
+      const order = [...list.querySelectorAll('.item')].map(el => +el.dataset.id);
+      items.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+      drag = null;
+      render();
+    }
+
+    // ---- Birleştir ----
+    genBtn.addEventListener('click', merge);
+
+    async function merge() {
+      const usable = items.filter(i => i.pages !== 'err');
+      if (!usable.length) return;
+      genBtn.disabled = true;
+      const orig = genText.textContent;
+      genBtn.querySelector('svg').classList.add('hidden');
+      const spin = document.createElement('span'); spin.className = 'spin';
+      genBtn.insertBefore(spin, genText);
+
+      try {
+        const out = await PDFDocument.create();
+        for (let i = 0; i < usable.length; i++) {
+          const it = usable[i];
+          genText.textContent = `Birleştiriliyor ${i + 1}/${usable.length}`;
+          const bytes = new Uint8Array(await it.file.arrayBuffer());
+          const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
+          const pages = await out.copyPages(src, src.getPageIndices());
+          pages.forEach(p => out.addPage(p));
+          await new Promise(r => setTimeout(r));
+        }
+        genText.textContent = 'Kaydediliyor…';
+        const data = await out.save();
+        downloadPdf(data, filename());
+        const skipped = items.length - usable.length;
+        toast(skipped ? `PDF hazır ✓ (${skipped} bozuk dosya atlandı)` : 'PDF hazır ✓');
+      } catch (err) {
+        console.error(err);
+        toast('Hata: ' + (err.message || 'Birleştirilemedi'), true);
+      } finally {
+        spin.remove();
+        genBtn.querySelector('svg').classList.remove('hidden');
+        genText.textContent = orig;
+        genBtn.disabled = items.filter(i => i.pages !== 'err').length === 0;
+      }
+    }
+
+    function downloadPdf(bytes, name) {
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    function filename() {
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return `birlestirilmis-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.pdf`;
+    }
+
+    // ---- Yardımcılar ----
+    function fmtSize(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+    let toastT;
+    function toast(msg, err) {
+      const t = $('#toast');
+      t.textContent = msg; t.classList.toggle('err', !!err); t.classList.add('show');
+      clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800);
+    }
+  })();
+  </script>
+</body>
+</html>

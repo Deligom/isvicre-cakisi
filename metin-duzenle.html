@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Metin Düzenle — PDF Araç Kutusu</title>
+<style>
+  :root {
+    --bg:#f8fafc; --surface:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0;
+    --accent:#4f46e5; --pink:#db2777; --pink-soft:#fdf2f8; --danger:#e11d48; --amber:#b45309; --amber-soft:#fffbeb;
+    --radius:18px; --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  .wrap { max-width:820px; margin:0 auto; padding:16px 16px 64px; }
+
+  .back { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--muted); font-size:14px; font-weight:600; padding:8px 4px; }
+  .back svg { width:18px; height:18px; }
+  .head { display:flex; align-items:center; gap:12px; margin:6px 0 16px; }
+  .head .icon { width:44px; height:44px; border-radius:13px; background:var(--pink-soft); color:var(--pink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .head .icon svg { width:24px; height:24px; }
+  .head h1 { font-size:21px; font-weight:800; margin:0; letter-spacing:-.02em; }
+  .head p { margin:1px 0 0; color:var(--muted); font-size:13px; }
+
+  .drop { border:2px dashed #cbd5e1; border-radius:var(--radius); background:var(--surface); padding:34px 20px; text-align:center; cursor:pointer; transition:.15s; }
+  .drop.hot { border-color:var(--pink); background:var(--pink-soft); }
+  .drop .di { width:52px; height:52px; border-radius:15px; background:var(--pink-soft); color:var(--pink); display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .drop .di svg { width:28px; height:28px; }
+  .drop .t { font-weight:700; font-size:15.5px; }
+  .drop .s { color:var(--muted); font-size:13px; margin-top:4px; }
+  .note { display:flex; gap:9px; background:var(--amber-soft); color:var(--amber); border:1px solid #fde68a; border-radius:14px; padding:12px 14px; font-size:12.5px; margin-top:14px; line-height:1.5; }
+  .note svg { width:18px; height:18px; flex:0 0 auto; margin-top:1px; }
+
+  .filebar { display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:12px; }
+  .filebar .fico { width:38px; height:46px; border-radius:7px; background:var(--pink-soft); color:var(--pink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .filebar .fico svg { width:20px; height:20px; }
+  .filebar .fi { min-width:0; flex:1; }
+  .filebar .fi .n { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .filebar .fi .s { font-size:12px; color:var(--muted); }
+  .filebar .change { border:1px solid var(--border); background:var(--surface); color:var(--muted); border-radius:10px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; flex:0 0 auto; }
+
+  .toolbar { display:flex; align-items:center; justify-content:space-between; margin:2px 2px 10px; gap:10px; }
+  .pager { display:flex; align-items:center; gap:8px; }
+  .pager button { width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .pager button:disabled { opacity:.35; cursor:default; }
+  .pager button svg { width:16px; height:16px; }
+  .pager .lbl { font-size:13px; font-weight:600; min-width:60px; text-align:center; }
+  .editsinfo { font-size:13px; color:var(--muted); display:flex; align-items:center; gap:10px; }
+  .editsinfo b { color:var(--pink); }
+  .editsinfo button { background:none; border:none; color:var(--danger); font-size:13px; font-weight:600; cursor:pointer; }
+
+  .stage { position:relative; display:inline-block; line-height:0; box-shadow:0 2px 14px rgba(15,23,42,.14); border-radius:4px; overflow:hidden; background:#fff; }
+  .stagewrap { display:flex; justify-content:center; background:#f1f5f9; border-radius:14px; padding:14px; min-height:200px; align-items:flex-start; overflow:auto; }
+  #base, #overlay { display:block; }
+  #overlay { position:absolute; left:0; top:0; pointer-events:none; }
+  #hotspots { position:absolute; left:0; top:0; right:0; bottom:0; }
+  .hot { position:absolute; cursor:pointer; border-radius:3px; transition:background .1s; }
+  .hot:hover { background:rgba(219,39,119,.16); outline:1.5px solid rgba(219,39,119,.5); }
+  .hot.active { outline:1.5px dashed rgba(219,39,119,.75); outline-offset:1px; }
+  .hint { text-align:center; color:var(--muted); font-size:12.5px; margin:10px 0 0; }
+
+  .bar { position:sticky; bottom:0; margin-top:16px; padding:14px 0 4px; background:linear-gradient(to top,var(--bg) 78%,transparent); }
+  .btn { width:100%; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:700; background:var(--accent); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 8px 20px rgba(79,70,229,.3); transition:.15s; }
+  .btn:active { transform:scale(.99); }
+  .btn:disabled { background:#cbd5e1; box-shadow:none; cursor:default; }
+  .btn svg { width:20px; height:20px; }
+  .spin { width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  /* Düzenleme alt-paneli */
+  .sheetbg { position:fixed; inset:0; background:rgba(15,23,42,.35); opacity:0; pointer-events:none; transition:.2s; z-index:40; }
+  .sheetbg.show { opacity:1; pointer-events:auto; }
+  .sheet { position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-radius:20px 20px 0 0; box-shadow:0 -10px 40px rgba(15,23,42,.25); z-index:41; transform:translateY(100%); transition:transform .22s ease; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); max-width:560px; margin:0 auto; }
+  .sheet.show { transform:translateY(0); }
+  .sheet h3 { margin:0 0 4px; font-size:16px; font-weight:800; }
+  .sheet .orig { font-size:12.5px; color:var(--muted); margin-bottom:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sheet label { display:block; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.03em; margin:0 0 6px; }
+  .sheet input[type=text] { width:100%; border:1px solid var(--border); border-radius:11px; padding:12px 13px; font-size:15px; font-family:inherit; }
+  .sheet input[type=text]:focus { outline:none; border-color:var(--pink); }
+  .row { display:flex; gap:10px; margin-top:12px; }
+  .row > div { flex:1; }
+  .sheet select, .sheet input[type=number] { width:100%; border:1px solid var(--border); border-radius:11px; padding:11px 12px; font-size:14px; font-family:inherit; background:var(--surface); }
+  .colorrow { display:flex; gap:10px; margin-top:12px; }
+  .colorrow .cbox { flex:1; }
+  .colorrow input[type=color] { width:100%; height:42px; border:1px solid var(--border); border-radius:11px; padding:3px; background:var(--surface); cursor:pointer; }
+  .nudge { display:flex; align-items:center; gap:6px; margin-top:12px; }
+  .nudge .pad { display:grid; grid-template-columns:repeat(3,34px); grid-template-rows:repeat(2,30px); gap:4px; }
+  .nudge button { border:1px solid var(--border); background:var(--surface); border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); }
+  .nudge button svg { width:15px; height:15px; }
+  .nudge .lbl { font-size:12px; color:var(--muted); }
+  .sheet .acts { display:flex; gap:10px; margin-top:18px; }
+  .sheet .acts button { flex:1; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; border:none; }
+  .sheet .cancel { background:#f1f5f9; color:var(--text); }
+  .sheet .del { background:var(--danger); color:#fff; flex:0 0 auto; padding:14px 16px; }
+  .sheet .apply { background:var(--pink); color:#fff; }
+
+  .hidden { display:none !important; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a; color:#fff; padding:11px 18px; border-radius:12px; font-size:13.5px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transition:.25s; pointer-events:none; z-index:60; max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; }
+  .toast.err { background:var(--danger); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Ana sayfa
+    </a>
+
+    <div class="head">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </span>
+      <div>
+        <h1>Metin Düzenle</h1>
+        <p>Metnin üzerine yaz — düz zeminlerde iyi sonuç verir</p>
+      </div>
+    </div>
+
+    <input type="file" id="file" accept="application/pdf,.pdf" class="hidden">
+
+    <div class="drop" id="drop">
+      <div class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M20 21H4a2 2 0 0 1-2-2v-4"/></svg></div>
+      <div class="t">PDF aç</div>
+      <div class="s">Dokun ya da buraya sürükle · tek dosya</div>
+    </div>
+    <div class="note" id="introNote">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      <div><b>Nasıl çalışır:</b> Gerçek "akış" düzenlemesi değil — seçtiğin metnin üzerine, zemin renginde bir dikdörtgen çizip yeni metni yazar. <b>Düz renkli zeminlerde</b> ve benzer uzunluktaki değişikliklerde iyi görünür; resimli/desenli zeminde ya da çok uzun metinde kusur olabilir.</div>
+    </div>
+
+    <div id="editor" class="hidden">
+      <div class="filebar">
+        <span class="fico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+        <div class="fi"><div class="n" id="fname">—</div><div class="s" id="fmeta">—</div></div>
+        <button class="change" id="change">Değiştir</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="pager">
+          <button id="prev" title="Önceki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <span class="lbl" id="plabel">1 / 1</span>
+          <button id="next" title="Sonraki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+        <div class="editsinfo"><span><b id="editcount">0</b> düzenleme</span><button id="undoall" class="hidden">Tümünü geri al</button></div>
+      </div>
+
+      <div class="stagewrap">
+        <div class="stage" id="stage">
+          <canvas id="base"></canvas>
+          <canvas id="overlay"></canvas>
+          <div id="hotspots"></div>
+        </div>
+      </div>
+      <p class="hint">Değiştirmek istediğin metne dokun</p>
+    </div>
+
+    <div class="bar hidden" id="actionbar">
+      <button class="btn" id="save" disabled>
+        <svg id="save-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+        <span id="save-text">PDF kaydet</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="sheetbg" id="sheetbg"></div>
+  <div class="sheet" id="sheet">
+    <h3>Metni düzenle</h3>
+    <div class="orig" id="origtext">—</div>
+    <label>Yeni metin</label>
+    <input type="text" id="newtext" autocomplete="off">
+    <div class="row">
+      <div>
+        <label>Yazı tipi</label>
+        <select id="fontsel">
+          <option value="sans">Sans (Arial)</option>
+          <option value="sansbold">Sans Kalın</option>
+          <option value="serif">Serif (Times)</option>
+          <option value="mono">Mono (Courier)</option>
+        </select>
+      </div>
+      <div>
+        <label>Boyut</label>
+        <input type="number" id="fontsize" min="4" max="200" step="0.5">
+      </div>
+    </div>
+    <div class="colorrow">
+      <div class="cbox"><label>Metin rengi</label><input type="color" id="textcolor" value="#000000"></div>
+      <div class="cbox"><label>Zemin rengi</label><input type="color" id="bgcolor" value="#ffffff"></div>
+    </div>
+    <div class="nudge">
+      <div class="pad">
+        <span></span>
+        <button id="nUp" title="Yukarı"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+        <span></span>
+        <button id="nLeft" title="Sol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+        <button id="nDown" title="Aşağı"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button id="nRight" title="Sağ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      </div>
+      <span class="lbl">Konum ince ayarı</span>
+    </div>
+    <div class="acts">
+      <button class="cancel" id="cancelEdit">İptal</button>
+      <button class="del hidden" id="deleteEdit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      <button class="apply" id="applyEdit">Uygula</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/pdf-lib.min.js"></script>
+  <script src="lib/fontkit.min.js"></script>
+  <script>
+  (function () {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+    const { PDFDocument, rgb } = PDFLib;
+    const $ = (s) => document.querySelector(s);
+
+    const FONT_FILES = { sans:'lib/Arimo-Regular.ttf', sansbold:'lib/Arimo-Bold.ttf', serif:'lib/Tinos-Regular.ttf', mono:'lib/Cousine-Regular.ttf' };
+    const FONT_CSS = { sans:'normal', sansbold:'bold', serif:'normal', mono:'normal' };
+    const FONT_FAM = { sans:'Arimo,Arial,sans-serif', sansbold:'Arimo,Arial,sans-serif', serif:'Tinos,"Times New Roman",serif', mono:'Cousine,"Courier New",monospace' };
+    const fontBytes = {};  // key -> ArrayBuffer (lazy)
+
+    const drop=$('#drop'), fileInput=$('#file'), editor=$('#editor'), actionbar=$('#actionbar'), introNote=$('#introNote');
+    const baseCanvas=$('#base'), overlay=$('#overlay'), hotspots=$('#hotspots'), stage=$('#stage');
+    const saveBtn=$('#save'), saveText=$('#save-text'), saveIcon=$('#save-icon');
+    const plabel=$('#plabel'), prevBtn=$('#prev'), nextBtn=$('#next');
+    const sheet=$('#sheet'), sheetbg=$('#sheetbg');
+
+    let file=null, origBytes=null, libSrcDoc=null, jsDoc=null;
+    let numPages=0, curPage=1, dpr=Math.max(1, window.devicePixelRatio||1);
+    let displayScale=1;                 // CSS px / PDF birim
+    let pageTextCache={};               // pageIndex -> {items, styles}
+    let edits=[];                       // {key,page,rx,ry,rw,rh,bx,by,size,fontKey,text,color01,bg01}
+    let editing=null;                   // düzenleme durumu
+    let renderToken=0;
+
+    // ---- Dosya ----
+    drop.addEventListener('click',()=>fileInput.click());
+    $('#change').addEventListener('click',()=>fileInput.click());
+    fileInput.addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); fileInput.value=''; });
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
+    drop.addEventListener('drop',e=>{ const f=e.dataTransfer&&Array.from(e.dataTransfer.files).find(x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name)); if(f)handleFile(f); else toast('PDF bulunamadı',true); });
+
+    async function handleFile(f){
+      file=f; edits=[]; curPage=1; pageTextCache={};
+      try {
+        origBytes=new Uint8Array(await f.arrayBuffer());
+        jsDoc=await pdfjsLib.getDocument({data:origBytes.slice(0)}).promise;
+        libSrcDoc=await PDFDocument.load(origBytes,{ignoreEncryption:true});
+      } catch(err){ console.error(err); toast('PDF açılamadı',true); return; }
+      numPages=jsDoc.numPages;
+      drop.classList.add('hidden'); introNote.classList.add('hidden');
+      editor.classList.remove('hidden'); actionbar.classList.remove('hidden');
+      $('#fname').textContent=f.name; $('#fmeta').textContent=`${numPages} sayfa · ${fmtSize(f.size)}`;
+      updateEditsInfo();
+      await renderPage();
+    }
+
+    // ---- Font yükleme ----
+    async function getFontBytes(key){
+      if(!fontBytes[key]) fontBytes[key]=await (await fetch(FONT_FILES[key])).arrayBuffer();
+      return fontBytes[key];
+    }
+
+    // ---- Sayfa çizimi (baked = orijinal + o sayfadaki commit edilmiş düzenlemeler) ----
+    async function bakeBytes(pageIndices, editList){
+      const doc=await PDFDocument.create();
+      doc.registerFontkit(fontkit);
+      const fcache={};
+      async function font(key){ if(!fcache[key]) fcache[key]=await doc.embedFont(await getFontBytes(key),{subset:false}); return fcache[key]; }
+      const copied=await doc.copyPages(libSrcDoc,pageIndices);
+      for(let i=0;i<copied.length;i++){
+        const page=copied[i]; doc.addPage(page);
+        const pIdx=pageIndices[i];
+        for(const e of editList.filter(e=>e.page===pIdx)){
+          page.drawRectangle({x:e.rx,y:e.ry,width:e.rw,height:e.rh,color:rgb(e.bg01[0],e.bg01[1],e.bg01[2])});
+          const fo=await font(e.fontKey);
+          try { page.drawText(e.text,{x:e.bx,y:e.by,size:e.size,font:fo,color:rgb(e.color01[0],e.color01[1],e.color01[2])}); }
+          catch(err){ console.warn('drawText',err); }
+        }
+      }
+      return await doc.save();
+    }
+
+    async function getPageText(pIdx){
+      if(!pageTextCache[pIdx]){
+        const page=await jsDoc.getPage(pIdx+1);
+        pageTextCache[pIdx]=await page.getTextContent();
+      }
+      return pageTextCache[pIdx];
+    }
+
+    async function renderPage(excludeKey){
+      const token=++renderToken;
+      const pIdx=curPage-1;
+      plabel.textContent=`${curPage} / ${numPages}`;
+      prevBtn.disabled=curPage<=1; nextBtn.disabled=curPage>=numPages;
+
+      // ölçek: konteyner genişliğine sığdır
+      const jsPage=await jsDoc.getPage(curPage);
+      const base=jsPage.getViewport({scale:1});
+      const wrapW=Math.min(stage.parentElement.clientWidth-28, 640);
+      displayScale=wrapW/base.width;
+
+      // baked baytları (düzenleme hariç excludeKey)
+      const useEdits=edits.filter(e=>e.key!==excludeKey);
+      const bytes=await bakeBytes([pIdx], useEdits);
+      if(token!==renderToken) return;
+      const bdoc=await pdfjsLib.getDocument({data:bytes.slice(0)}).promise;
+      const bpage=await bdoc.getPage(1);
+      const vp=bpage.getViewport({scale:displayScale*dpr});
+      baseCanvas.width=Math.ceil(vp.width); baseCanvas.height=Math.ceil(vp.height);
+      baseCanvas.style.width=(vp.width/dpr)+'px'; baseCanvas.style.height=(vp.height/dpr)+'px';
+      overlay.width=baseCanvas.width; overlay.height=baseCanvas.height;
+      overlay.style.width=baseCanvas.style.width; overlay.style.height=baseCanvas.style.height;
+      const bctx=baseCanvas.getContext('2d');
+      bctx.fillStyle='#ffffff'; bctx.fillRect(0,0,baseCanvas.width,baseCanvas.height); // şeffaf yerine beyaz (renk örnekleme + görünüm)
+      await bpage.render({canvasContext:bctx,viewport:vp}).promise;
+      if(token!==renderToken) return;
+
+      await buildHotspots(jsPage);
+      overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);
+    }
+
+    async function buildHotspots(jsPage){
+      hotspots.innerHTML='';
+      const tvp=jsPage.getViewport({scale:displayScale});
+      const tc=await getPageText(curPage-1);
+      tc.items.forEach((it,idx)=>{
+        const s=(it.str||''); if(!s.trim()) return;
+        const g=itemGeom(it,tvp);
+        const el=document.createElement('div');
+        el.className='hot';
+        el.style.left=g.cssLeft+'px'; el.style.top=g.cssTop+'px';
+        el.style.width=g.cssW+'px'; el.style.height=g.cssH+'px';
+        if(edits.some(e=>e.key===curPage-1+':'+idx)) el.classList.add('active');
+        el.addEventListener('click',()=>openEditor(idx,it,tvp));
+        hotspots.appendChild(el);
+      });
+    }
+
+    // Metin nesnesinin geometrisi: hem PDF birimi (bake) hem CSS (overlay/hotspot)
+    function itemGeom(it,tvp){
+      const bx=it.transform[4], by=it.transform[5];
+      const sizePdf=Math.hypot(it.transform[0],it.transform[1]);
+      const wPdf=it.width;
+      // CSS
+      const m=pdfjsLib.Util.transform(tvp.transform,it.transform);
+      const cssFontH=Math.hypot(m[2],m[3]);
+      const cssLeft=m[4], cssBaseline=m[5], cssTop=cssBaseline-cssFontH;
+      const cssW=wPdf*displayScale;
+      return {
+        bx,by,sizePdf,wPdf,
+        rx:bx-sizePdf*0.06, ry:by-sizePdf*0.28, rw:wPdf+sizePdf*0.12, rh:sizePdf*1.24,
+        cssLeft,cssTop,cssBaseline,cssFontH,cssW
+      };
+    }
+
+    // ---- Zemin & metin rengi örnekleme (base canvas'tan) ----
+    function sampleColors(g){
+      const ctx=baseCanvas.getContext('2d');
+      const dL=Math.round(g.cssLeft*dpr), dT=Math.round(g.cssTop*dpr), dW=Math.round(g.cssW*dpr), dH=Math.round(g.cssFontH*dpr);
+      const W=baseCanvas.width, H=baseCanvas.height;
+      const inb=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
+      // zemin: kutu çevresi (üst/alt kenarın hemen dışı)
+      let darkest=null, darkVal=1e9;
+      const pts=[];
+      for(let x=dL; x<dL+dW; x+=Math.max(2,Math.round(dW/12))){ pts.push([x,dT-2]); pts.push([x,dT+dH+2]); }
+      pts.push([dL-3,dT+dH/2]); pts.push([dL+dW+3,dT+dH/2]);
+      // Baskın zemin rengini bul, sonra o kümedeki gerçek piksellerin ortalamasını döndür (tam renk).
+      const buckets={};
+      for(const [x,y] of pts){ if(!inb(x,y))continue; const p=ctx.getImageData(x,y,1,1).data; const k=(p[0]>>4)+'_'+(p[1]>>4)+'_'+(p[2]>>4); const b=buckets[k]||(buckets[k]={n:0,r:0,g:0,bl:0}); b.n++; b.r+=p[0]; b.g+=p[1]; b.bl+=p[2]; }
+      let best=null; for(const k in buckets){ if(!best||buckets[k].n>best.n) best=buckets[k]; }
+      let bg=best?[Math.round(best.r/best.n),Math.round(best.g/best.n),Math.round(best.bl/best.n)]:[255,255,255];
+      // metin rengi: kutu içinde en koyu piksel
+      try {
+        const img=ctx.getImageData(Math.max(0,dL),Math.max(0,dT),Math.min(dW,W-dL),Math.min(dH,H-dT)).data;
+        for(let i=0;i<img.length;i+=4){ const v=img[i]+img[i+1]+img[i+2]; if(v<darkVal){ darkVal=v; darkest=[img[i],img[i+1],img[i+2]]; } }
+      } catch(e){}
+      const txt = darkest || [0,0,0];
+      return { bg, txt };
+    }
+
+    // ---- Düzenleyici ----
+    function openEditor(idx,it,tvp){
+      const key=(curPage-1)+':'+idx;
+      const g=itemGeom(it,tvp);
+      const existing=edits.find(e=>e.key===key);
+      const styles=(pageTextCache[curPage-1]||{}).styles||{};
+      const guessKey = existing ? existing.fontKey : guessFont(it,styles);
+      let colors;
+      if(existing){ colors={bg:existing.bg01.map(v=>Math.round(v*255)), txt:existing.color01.map(v=>Math.round(v*255))}; }
+      else colors=sampleColors(g);
+
+      editing={ key, idx, g, nudgeX: existing?existing.nudgeX:0, nudgeY: existing?existing.nudgeY:0 };
+      $('#origtext').textContent='Orijinal: '+(it.str||'');
+      $('#newtext').value = existing ? existing.text : (it.str||'');
+      $('#fontsel').value = guessKey;
+      $('#fontsize').value = +( (existing?existing.size:g.sizePdf).toFixed(1) );
+      $('#textcolor').value = rgbHex(colors.txt);
+      $('#bgcolor').value = rgbHex(colors.bg);
+      $('#deleteEdit').classList.toggle('hidden', !existing);
+
+      // base'i bu düzenleme hariç yeniden çiz (varsa eski hali kalksın), sonra canlı overlay
+      renderPage(key).then(()=>drawLive());
+      openSheet();
+      setTimeout(()=>$('#newtext').focus(),250);
+    }
+
+    function drawLive(){
+      if(!editing) return;
+      const g=editing.g;
+      const ctx=overlay.getContext('2d');
+      ctx.clearRect(0,0,overlay.width,overlay.height);
+      const bg=hexRgb($('#bgcolor').value), txt=hexRgb($('#textcolor').value);
+      const size=parseFloat($('#fontsize').value)||g.sizePdf;
+      const fontKey=$('#fontsel').value;
+      // redaksiyon dikdörtgeni (eski konum)
+      ctx.fillStyle=`rgb(${bg[0]},${bg[1]},${bg[2]})`;
+      ctx.fillRect(g.rx*displayScale*dpr - 0, (baseCanvas.height - (g.ry+g.rh)*displayScale*dpr), g.rw*displayScale*dpr, g.rh*displayScale*dpr);
+      // yeni metin (nudge dahil)
+      const nx=editing.nudgeX, ny=editing.nudgeY;
+      const xDev=(g.bx+nx)*displayScale*dpr;
+      const yDev=baseCanvas.height-((g.by+ny)*displayScale*dpr);
+      ctx.fillStyle=`rgb(${txt[0]},${txt[1]},${txt[2]})`;
+      ctx.textBaseline='alphabetic';
+      ctx.font=`${FONT_CSS[fontKey]} ${size*displayScale*dpr}px ${FONT_FAM[fontKey]}`;
+      ctx.fillText($('#newtext').value, xDev, yDev);
+    }
+
+    // canlı önizleme: alanlar değişince
+    ['#newtext','#fontsize','#textcolor','#bgcolor'].forEach(sel=>$(sel).addEventListener('input',drawLive));
+    $('#fontsel').addEventListener('change',drawLive);
+    const nudge=(dx,dy)=>{ if(!editing)return; editing.nudgeX+=dx; editing.nudgeY+=dy; drawLive(); };
+    $('#nUp').addEventListener('click',()=>nudge(0,1));
+    $('#nDown').addEventListener('click',()=>nudge(0,-1));
+    $('#nLeft').addEventListener('click',()=>nudge(-1,0));
+    $('#nRight').addEventListener('click',()=>nudge(1,0));
+
+    $('#applyEdit').addEventListener('click',applyEdit);
+    $('#cancelEdit').addEventListener('click',closeEditorAndRedraw);
+    $('#deleteEdit').addEventListener('click',()=>{ if(editing){ edits=edits.filter(e=>e.key!==editing.key); } finishEdit(); });
+    sheetbg.addEventListener('click',closeEditorAndRedraw);
+
+    function applyEdit(){
+      if(!editing) return;
+      const g=editing.g;
+      const text=$('#newtext').value;
+      const size=parseFloat($('#fontsize').value)||g.sizePdf;
+      const bg=hexRgb($('#bgcolor').value).map(v=>v/255);
+      const color=hexRgb($('#textcolor').value).map(v=>v/255);
+      const fontKey=$('#fontsel').value;
+      edits=edits.filter(e=>e.key!==editing.key);
+      edits.push({
+        key:editing.key, page:curPage-1,
+        rx:g.rx, ry:g.ry, rw:g.rw, rh:g.rh,
+        bx:g.bx+editing.nudgeX, by:g.by+editing.nudgeY,
+        nudgeX:editing.nudgeX, nudgeY:editing.nudgeY,
+        size, fontKey, text, color01:color, bg01:bg
+      });
+      finishEdit();
+    }
+
+    function finishEdit(){
+      const wasKey=editing?editing.key:null;
+      editing=null; closeSheet();
+      updateEditsInfo();
+      renderPage();  // tüm commit'lerle yeniden çiz
+    }
+    function closeEditorAndRedraw(){ const had=!!editing; editing=null; closeSheet(); if(had) renderPage(); }
+
+    function openSheet(){ sheetbg.classList.add('show'); sheet.classList.add('show'); }
+    function closeSheet(){ sheetbg.classList.remove('show'); sheet.classList.remove('show'); }
+
+    function updateEditsInfo(){
+      $('#editcount').textContent=edits.length;
+      $('#undoall').classList.toggle('hidden',edits.length===0);
+      saveBtn.disabled=edits.length===0;
+      saveText.textContent=edits.length?`PDF kaydet · ${edits.length} düzenleme`:'PDF kaydet';
+    }
+    $('#undoall').addEventListener('click',()=>{ edits=[]; updateEditsInfo(); renderPage(); });
+
+    // ---- Sayfa gezinme ----
+    prevBtn.addEventListener('click',()=>{ if(curPage>1){curPage--; renderPage();} });
+    nextBtn.addEventListener('click',()=>{ if(curPage<numPages){curPage++; renderPage();} });
+
+    // ---- Kaydet ----
+    saveBtn.addEventListener('click',async()=>{
+      if(!edits.length) return;
+      saveBtn.disabled=true; saveIcon.classList.add('hidden');
+      const spin=document.createElement('span'); spin.className='spin'; saveBtn.insertBefore(spin,saveText);
+      const t0=saveText.textContent; saveText.textContent='Kaydediliyor…';
+      try {
+        const idxs=Array.from({length:numPages},(_,i)=>i);
+        const bytes=await bakeBytes(idxs,edits);
+        const base=(file.name||'belge').replace(/\.pdf$/i,'');
+        downloadPdf(bytes,`${base}-duzenlendi.pdf`);
+        toast(`✓ ${edits.length} düzenleme kaydedildi`);
+      } catch(err){ console.error(err); toast('Hata: '+(err.message||'kaydedilemedi'),true); }
+      finally { spin.remove(); saveIcon.classList.remove('hidden'); saveText.textContent=t0; saveBtn.disabled=edits.length===0; }
+    });
+
+    // ---- Yardımcılar ----
+    function guessFont(it,styles){
+      const st=styles&&styles[it.fontName]; const fam=((st&&st.fontFamily)||'').toLowerCase();
+      if(/serif/.test(fam)&&!/sans/.test(fam)) return 'serif';
+      if(/mono|courier|consol/.test(fam)) return 'mono';
+      if(/bold/.test((it.fontName||'').toLowerCase())) return 'sansbold';
+      return 'sans';
+    }
+    function rgbHex(a){ return '#'+a.map(v=>Math.max(0,Math.min(255,v|0)).toString(16).padStart(2,'0')).join(''); }
+    function hexRgb(h){ const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+    function fmtSize(b){ if(b<1024)return b+' B'; if(b<1048576)return(b/1024).toFixed(0)+' KB'; return(b/1048576).toFixed(1)+' MB'; }
+    function downloadPdf(bytes,name){ const blob=new Blob([bytes],{type:'application/pdf'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),4000); }
+    let toastT; function toast(msg,err){ const t=$('#toast'); t.textContent=msg; t.classList.toggle('err',!!err); t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2800); }
+  })();
+  </script>
+</body>
+</html>

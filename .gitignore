@@ -1,0 +1,12 @@
+# İşletim sistemi çöpleri
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Geçici analiz / çıktı dosyaları (proje köküne kopyalanan örnek PDF'ler vb.)
+_*.pdf
+*.tmp
+
+# Yerel makineye özel Claude ayarları (launch.json korunur)
+.claude/settings.local.json

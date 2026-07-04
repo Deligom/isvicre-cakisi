@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Filigran Kaldır — PDF Araç Kutusu</title>
+<style>
+  :root {
+    --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #4f46e5; --accent-soft: #eef2ff;
+    --teal: #0d9488; --teal-soft: #f0fdfa; --danger: #e11d48; --amber: #b45309; --amber-soft: #fffbeb;
+    --radius: 18px; --shadow: 0 1px 2px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.06);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16px 16px 64px; }
+
+  .back { display:inline-flex; align-items:center; gap:6px; text-decoration:none; color:var(--muted);
+    font-size:14px; font-weight:600; padding:8px 4px; }
+  .back svg { width:18px; height:18px; }
+
+  .head { display:flex; align-items:center; gap:12px; margin:6px 0 20px; }
+  .head .icon { width:44px; height:44px; border-radius:13px; background:var(--teal-soft); color:var(--teal);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .head .icon svg { width:24px; height:24px; }
+  .head h1 { font-size:21px; font-weight:800; margin:0; letter-spacing:-.02em; }
+  .head p { margin:1px 0 0; color:var(--muted); font-size:13px; }
+
+  /* Dropzone */
+  .drop { border:2px dashed #cbd5e1; border-radius:var(--radius); background:var(--surface);
+    padding:34px 20px; text-align:center; cursor:pointer; transition:.15s; }
+  .drop.hot { border-color:var(--teal); background:var(--teal-soft); }
+  .drop .di { width:52px; height:52px; border-radius:15px; background:var(--teal-soft); color:var(--teal);
+    display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .drop .di svg { width:28px; height:28px; }
+  .drop .t { font-weight:700; font-size:15.5px; }
+  .drop .s { color:var(--muted); font-size:13px; margin-top:4px; }
+  .hint { margin-top:16px; font-size:12.5px; color:var(--muted); text-align:center; line-height:1.6; }
+
+  /* Dosya çubuğu */
+  .filebar { display:flex; align-items:center; gap:12px; background:var(--surface);
+    border:1px solid var(--border); border-radius:14px; padding:12px 14px; box-shadow:var(--shadow); margin-bottom:14px; }
+  .filebar .fico { width:38px; height:46px; border-radius:7px; background:var(--teal-soft); color:var(--teal);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .filebar .fico svg { width:20px; height:20px; }
+  .filebar .fi { min-width:0; flex:1; }
+  .filebar .fi .n { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .filebar .fi .s { font-size:12px; color:var(--muted); }
+  .filebar .change { border:1px solid var(--border); background:var(--surface); color:var(--muted);
+    border-radius:10px; padding:8px 12px; font-size:13px; font-weight:600; cursor:pointer; flex:0 0 auto; }
+
+  /* Tespit bandı */
+  .banner { display:flex; align-items:flex-start; gap:10px; border-radius:14px; padding:13px 15px;
+    font-size:13.5px; margin-bottom:14px; }
+  .banner svg { width:20px; height:20px; flex:0 0 auto; margin-top:1px; }
+  .banner.found { background:var(--teal-soft); color:#0f766e; border:1px solid #99f6e4; }
+  .banner.none { background:var(--amber-soft); color:var(--amber); border:1px solid #fde68a; }
+  .banner b { font-weight:700; }
+
+  /* Önizleme */
+  .previewbox { background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    box-shadow:var(--shadow); overflow:hidden; }
+  .ptools { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border); gap:10px; }
+  .pager { display:flex; align-items:center; gap:8px; }
+  .pager button { width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .pager button:disabled { opacity:.35; cursor:default; }
+  .pager button svg { width:16px; height:16px; }
+  .pager .lbl { font-size:13px; font-weight:600; min-width:64px; text-align:center; }
+  .ba { display:flex; background:#eef2f7; border-radius:10px; padding:3px; gap:3px; }
+  .ba button { border:none; background:transparent; padding:6px 12px; border-radius:8px; font-size:12.5px;
+    font-weight:600; color:var(--muted); cursor:pointer; }
+  .ba button.on { background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+  .ba button:disabled { opacity:.4; cursor:default; }
+  .canvaswrap { padding:14px; display:flex; justify-content:center; background:#f1f5f9; min-height:200px; align-items:center; }
+  .canvaswrap canvas { max-width:100%; height:auto; box-shadow:0 2px 12px rgba(15,23,42,.14); border-radius:4px; background:#fff; }
+  .canvaswrap .load { color:var(--muted); font-size:13px; }
+
+  /* Alt aksiyon */
+  .bar { position:sticky; bottom:0; margin-top:18px; padding:14px 0 4px;
+    background:linear-gradient(to top, var(--bg) 78%, transparent); }
+  .btn { width:100%; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:700;
+    background:var(--accent); color:#fff; cursor:pointer; display:flex; align-items:center;
+    justify-content:center; gap:9px; box-shadow:0 8px 20px rgba(79,70,229,.3); transition:.15s; }
+  .btn:active { transform:scale(.99); }
+  .btn:disabled { background:#cbd5e1; box-shadow:none; cursor:default; }
+  .btn.ok { background:var(--teal); box-shadow:0 8px 20px rgba(13,148,136,.3); }
+  .btn svg { width:20px; height:20px; }
+  .spin { width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff;
+    border-radius:50%; animation:sp .7s linear infinite; }
+  @keyframes sp { to { transform:rotate(360deg); } }
+
+  .hidden { display:none !important; }
+  .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#0f172a;
+    color:#fff; padding:11px 18px; border-radius:12px; font-size:13.5px; font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.25); opacity:0; transition:.25s; pointer-events:none; z-index:50;
+    max-width:90vw; text-align:center; }
+  .toast.show { opacity:1; }
+  .toast.err { background:var(--danger); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      Ana sayfa
+    </a>
+
+    <div class="head">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 5.5 9.19a9.19 9.19 0 1 0 13 0z"/><path d="m4 4 16 16"/></svg>
+      </span>
+      <div>
+        <h1>Filigran Kaldır</h1>
+        <p>Katman (Watermark) filigranını tespit et ve kaldır</p>
+      </div>
+    </div>
+
+    <input type="file" id="file" accept="application/pdf,.pdf" class="hidden">
+
+    <div class="drop" id="drop">
+      <div class="di">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M20 21H4a2 2 0 0 1-2-2v-4"/></svg>
+      </div>
+      <div class="t">PDF aç</div>
+      <div class="s">Dokun ya da buraya sürükle · tek dosya</div>
+    </div>
+    <p class="hint" id="hint">
+      Bu araç, sayfaya <b>ayrı katman olarak eklenmiş filigranları</b> tespit edip kaldırır:
+      <b>Watermark annotation</b> (ör. ÖSYM) ve <b>içerik katmanı</b> (ör. iLovePDF metin/resim filigranı).
+      Belgenin asıl metni ve şekilleri korunur. Katman bulunamazsa "bulunamadı" der; asla içeriğe zarar vermez.
+    </p>
+
+    <div id="viewer" class="hidden">
+      <div class="filebar">
+        <span class="fico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        </span>
+        <div class="fi">
+          <div class="n" id="fname">—</div>
+          <div class="s" id="fmeta">—</div>
+        </div>
+        <button class="change" id="change">Değiştir</button>
+      </div>
+
+      <div class="banner" id="banner"></div>
+
+      <div class="previewbox">
+        <div class="ptools">
+          <div class="pager">
+            <button id="prev" title="Önceki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <span class="lbl" id="plabel">1 / 1</span>
+            <button id="next" title="Sonraki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          </div>
+          <div class="ba" id="ba">
+            <button data-v="before" class="on">Önce</button>
+            <button data-v="after" id="ba-after" disabled>Sonra</button>
+          </div>
+        </div>
+        <div class="canvaswrap" id="canvaswrap">
+          <span class="load" id="pload">Yükleniyor…</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bar hidden" id="actionbar">
+      <button class="btn" id="go" disabled>
+        <svg id="go-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69 5.5 9.19a9.19 9.19 0 1 0 13 0z"/><path d="m4 4 16 16"/></svg>
+        <span id="go-text">Filigranı kaldır</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="lib/pdf.min.js"></script>
+  <script src="lib/pdf-lib.min.js"></script>
+  <script>
+  (function () {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+    const { PDFDocument, PDFName, PDFArray, PDFRef } = PDFLib;
+
+    const $ = (s) => document.querySelector(s);
+    const drop = $('#drop'), fileInput = $('#file'), viewer = $('#viewer'), actionbar = $('#actionbar');
+    const hint = $('#hint'), banner = $('#banner'), canvaswrap = $('#canvaswrap');
+    const goBtn = $('#go'), goText = $('#go-text'), goIcon = $('#go-icon');
+    const plabel = $('#plabel'), prevBtn = $('#prev'), nextBtn = $('#next');
+    const baAfter = $('#ba-after');
+
+    let file = null;
+    let origBytes = null;         // Uint8Array (orijinal)
+    let cleanBytes = null;        // Uint8Array (temizlenmiş)
+    let origDoc = null, cleanDoc = null;   // pdf.js dokümanları
+    let numPages = 0, curPage = 1;
+    let totalWm = 0, annotCount = 0, streamCount = 0, wmPages = 0;
+    let mode = 'before';          // before | after
+    let cleaned = false;
+    let renderToken = 0;
+
+    // ---- Dosya ----
+    drop.addEventListener('click', () => fileInput.click());
+    $('#change').addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); fileInput.value = ''; });
+
+    ['dragenter', 'dragover'].forEach(ev =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('hot'); }));
+    ['dragleave', 'drop'].forEach(ev =>
+      drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('hot'); }));
+    drop.addEventListener('drop', (e) => {
+      const f = e.dataTransfer && Array.from(e.dataTransfer.files).find(x => x.type === 'application/pdf' || /\.pdf$/i.test(x.name));
+      if (f) handleFile(f); else toast('PDF dosyası bulunamadı', true);
+    });
+
+    async function handleFile(f) {
+      file = f;
+      cleaned = false; cleanBytes = null; cleanDoc = null; mode = 'before'; curPage = 1;
+      try {
+        origBytes = new Uint8Array(await f.arrayBuffer());
+        origDoc = await pdfjsLib.getDocument({ data: origBytes.slice(0) }).promise;
+      } catch (err) {
+        console.error(err);
+        toast('PDF açılamadı: ' + (err.message || 'geçersiz dosya'), true);
+        return;
+      }
+      numPages = origDoc.numPages;
+
+      // Tespit (pdf-lib)
+      try {
+        const doc = await PDFDocument.load(origBytes, { ignoreEncryption: true });
+        const det = detectWatermarks(doc);
+        totalWm = det.total; annotCount = det.annots; streamCount = det.streams; wmPages = det.pages;
+      } catch (err) {
+        console.error(err); totalWm = 0; annotCount = 0; streamCount = 0; wmPages = 0;
+      }
+
+      drop.classList.add('hidden'); hint.classList.add('hidden');
+      viewer.classList.remove('hidden'); actionbar.classList.remove('hidden');
+      $('#fname').textContent = f.name;
+      $('#fmeta').textContent = `${numPages} sayfa · ${fmtSize(f.size)}`;
+
+      updateBanner();
+      updateBASeg();
+      setGoState();
+      renderPreview();
+    }
+
+    // Bir content stream'i çöz (latin1 metin) — imza taraması için
+    function decodeStream(stream) {
+      try { return new TextDecoder('latin1').decode(PDFLib.decodePDFRawStream(stream).decode()); }
+      catch (e) { return ''; }
+    }
+    // Ayrı content-stream olarak eklenmiş katman filigranı imzaları (iLovePDF vb.)
+    // 'image' = sadece resim çizen katman; 'text' = küçük /F0 metin katmanı ("iLovePDF").
+    function classifyStream(s) {
+      if (/ Do\b/.test(s) && !/\bBT\b/.test(s)) return 'image';
+      if (s.length < 500 && /\/F0\b/.test(s) && /(Tj|TJ)/.test(s)) return 'text';
+      return null;
+    }
+    function makeQStream(ctx) {
+      // Katmanı çıkarınca grafik yığını dengesini koru (iLovePDF metin filigranı "Q" ile başlar)
+      try { return ctx.register(ctx.stream('Q\n')); }
+      catch (e) { return ctx.register(ctx.flateStream('Q\n')); }
+    }
+
+    // Tespit: /Watermark annotation'ları + katman (content-stream) filigranları.
+    // Katman taraması yalnızca çok-stream'li (Contents = array) sayfalarda yapılır —
+    // içerikle birleşik tek stream'e asla dokunulmaz (güvenlik).
+    function detectWatermarks(pdfDoc) {
+      let annots = 0, streams = 0; const pagesWith = new Set();
+      pdfDoc.getPages().forEach((page, pi) => {
+        const an = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+        if (an) for (let i = 0; i < an.size(); i++) {
+          const el = an.get(i);
+          const d = el instanceof PDFRef ? pdfDoc.context.lookup(el) : el;
+          const sub = d && d.get(PDFName.of('Subtype'));
+          if (sub && sub.toString() === '/Watermark') { annots++; pagesWith.add(pi); }
+        }
+        const c = page.node.get(PDFName.of('Contents'));
+        if (c instanceof PDFArray) {
+          for (let i = 0; i < c.size(); i++) {
+            const el = c.get(i);
+            const st = el instanceof PDFRef ? pdfDoc.context.lookup(el) : el;
+            if (classifyStream(decodeStream(st))) { streams++; pagesWith.add(pi); }
+          }
+        }
+      });
+      return { annots, streams, total: annots + streams, pages: pagesWith.size };
+    }
+
+    // Kaldırma: her iki türü de temizler, kaldırılan katman sayısını döndürür.
+    function removeWatermarks(pdfDoc) {
+      let removed = 0;
+      for (const page of pdfDoc.getPages()) {
+        const an = page.node.lookupMaybe(PDFName.of('Annots'), PDFArray);
+        if (an) {
+          const keep = [];
+          for (let i = 0; i < an.size(); i++) {
+            const el = an.get(i);
+            const d = el instanceof PDFRef ? pdfDoc.context.lookup(el) : el;
+            const sub = d && d.get(PDFName.of('Subtype'));
+            if (sub && sub.toString() === '/Watermark') removed++; else keep.push(el);
+          }
+          page.node.set(PDFName.of('Annots'), pdfDoc.context.obj(keep));
+        }
+        const c = page.node.get(PDFName.of('Contents'));
+        if (c instanceof PDFArray) {
+          const keep = [];
+          for (let i = 0; i < c.size(); i++) {
+            const el = c.get(i);
+            const st = el instanceof PDFRef ? pdfDoc.context.lookup(el) : el;
+            const s = decodeStream(st);
+            const kind = classifyStream(s);
+            if (kind === 'image') { removed++; }                       // stream'i tamamen at
+            else if (kind === 'text') {
+              removed++;
+              if (s.trimStart().startsWith('Q')) keep.push(makeQStream(pdfDoc.context)); // dengeyi koru
+            } else keep.push(el);
+          }
+          page.node.set(PDFName.of('Contents'), pdfDoc.context.obj(keep));
+        }
+      }
+      return removed;
+    }
+
+    function updateBanner() {
+      if (totalWm > 0) {
+        const t = [];
+        if (annotCount) t.push('Watermark katmanı');
+        if (streamCount) t.push('içerik katmanı');
+        banner.className = 'banner found';
+        banner.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          <div><b>${wmPages} sayfada filigran bulundu</b> · ${totalWm} katman (${t.join(' + ')}). Kaldırınca belgenin asıl içeriği korunur. Aşağıdan <b>önce/sonra</b> önizleyip onaylayabilirsin.</div>`;
+      } else {
+        banner.className = 'banner none';
+        banner.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          <div><b>Annotation-tabanlı filigran bulunamadı.</b> Bu dosyadaki filigran (varsa) farklı bir yöntemle eklenmiş olabilir. Güvenlik için içeriğe dokunulmuyor — örneği paylaşırsan yaklaşımı genişletebiliriz.</div>`;
+      }
+    }
+
+    function updateBASeg() {
+      $('#ba').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === mode));
+      baAfter.disabled = !cleaned;
+    }
+    $('#ba').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b || b.disabled) return;
+      mode = b.dataset.v; updateBASeg(); renderPreview();
+    });
+
+    function setGoState() {
+      if (!cleaned) {
+        goBtn.disabled = totalWm === 0;
+        goBtn.className = 'btn';
+        goIcon.classList.remove('hidden');
+        goText.textContent = totalWm > 0 ? `Filigranı kaldır · ${totalWm} katman` : 'Filigran bulunamadı';
+      } else {
+        goBtn.disabled = false;
+        goBtn.className = 'btn ok';
+        goText.textContent = 'Temiz PDF\'i indir';
+      }
+    }
+
+    // ---- Sayfa gezinme ----
+    prevBtn.addEventListener('click', () => { if (curPage > 1) { curPage--; renderPreview(); } });
+    nextBtn.addEventListener('click', () => { if (curPage < numPages) { curPage++; renderPreview(); } });
+
+    async function renderPreview() {
+      const token = ++renderToken;
+      plabel.textContent = `${curPage} / ${numPages}`;
+      prevBtn.disabled = curPage <= 1; nextBtn.disabled = curPage >= numPages;
+      const doc = (mode === 'after' && cleanDoc) ? cleanDoc : origDoc;
+      if (!doc) return;
+      canvaswrap.innerHTML = '<span class="load">Yükleniyor…</span>';
+      try {
+        const page = await doc.getPage(curPage);
+        const cw = Math.min(canvaswrap.clientWidth - 28, 520);
+        const base = page.getViewport({ scale: 1 });
+        const dpr = window.devicePixelRatio || 1;
+        const scale = (cw / base.width) * dpr;
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+        canvas.style.width = (vp.width / dpr) + 'px';
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        if (token !== renderToken) return;
+        canvaswrap.innerHTML = ''; canvaswrap.appendChild(canvas);
+      } catch (err) {
+        console.error(err);
+        if (token === renderToken) canvaswrap.innerHTML = '<span class="load">Önizleme oluşturulamadı</span>';
+      }
+    }
+
+    // ---- Kaldır / indir ----
+    goBtn.addEventListener('click', async () => {
+      if (cleaned) { downloadPdf(cleanBytes, cleanName()); return; }
+      if (totalWm === 0) return;
+
+      goBtn.disabled = true;
+      goIcon.classList.add('hidden');
+      const spin = document.createElement('span'); spin.className = 'spin'; goBtn.insertBefore(spin, goText);
+      const t0 = goText.textContent; goText.textContent = 'Kaldırılıyor…';
+      try {
+        const doc = await PDFDocument.load(origBytes, { ignoreEncryption: true });
+        const removed = removeWatermarks(doc);
+        cleanBytes = await doc.save();
+        cleanDoc = await pdfjsLib.getDocument({ data: cleanBytes.slice(0) }).promise;
+        cleaned = true; mode = 'after';
+        spin.remove();
+        updateBASeg(); setGoState(); renderPreview();
+        toast(`✓ ${removed} filigran katmanı kaldırıldı`);
+      } catch (err) {
+        console.error(err);
+        spin.remove(); goIcon.classList.remove('hidden'); goText.textContent = t0; goBtn.disabled = false;
+        toast('Hata: ' + (err.message || 'kaldırılamadı'), true);
+      }
+    });
+
+    function cleanName() {
+      const base = (file.name || 'belge').replace(/\.pdf$/i, '');
+      return `${base}-filigransiz.pdf`;
+    }
+
+    function downloadPdf(bytes, name) {
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    // ---- Yardımcılar ----
+    function fmtSize(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+    let toastT;
+    function toast(msg, err) {
+      const t = $('#toast');
+      t.textContent = msg; t.classList.toggle('err', !!err); t.classList.add('show');
+      clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800);
+    }
+  })();
+  </script>
+</body>
+</html>
